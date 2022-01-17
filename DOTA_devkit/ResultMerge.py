@@ -128,7 +128,8 @@ def mergebase(srcpath, dstpath, nms):
                 rate = re.findall(pattern2, subname)[0]
 
                 confidence = splitline[1]
-                poly = list(map(float, splitline[2:]))
+                poly = list(map(float, splitline[2:-1]))
+                cls_name = splitline[-1]
                 origpoly = poly2origpoly(poly, x, y, rate)
                 det = origpoly
                 det.append(confidence)
@@ -174,5 +175,4 @@ def mergebypoly(srcpath, dstpath):
 
 if __name__ == '__main__':
     # see demo for example
-    mergebypoly(r'work_dirs/temp/result_raw',\
-     r'work_dirs/temp/result_merge')
+    mergebypoly('/home/yanggang/PyCharmWorkspace/yolov5-obb-detection/runs/detect/exp2/labels','/home/yanggang/PyCharmWorkspace/yolov5-obb-detection/runs/detect/exp2/result_merge')

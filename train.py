@@ -53,6 +53,7 @@ from utils.torch_utils import EarlyStopping, ModelEMA, de_parallel, select_devic
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
 RANK = int(os.getenv('RANK', -1))
 WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
+torch.cuda.is_available()
 
 def train(hyp,  # path/to/hyp.yaml or hyp dictionary
           opt,
@@ -64,6 +65,7 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
         opt.resume, opt.noval, opt.nosave, opt.workers, opt.freeze
 
     # Directories
+
     w = save_dir / 'weights'  # weights dir
     (w.parent if evolve else w).mkdir(parents=True, exist_ok=True)  # make dir
     last, best = w / 'last.pt', w / 'best.pt'
@@ -446,15 +448,15 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default=ROOT / 'weights/yolov5m.pt', help='initial weights path')
+    parser.add_argument('--weights', type=str, default=ROOT / 'runs/train/exp/weights/last.pt', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
     parser.add_argument('--data', type=str, default=ROOT / 'data/dotav15_poly.yaml', help='dataset.yaml path')
     parser.add_argument('--hyp', type=str, default=ROOT / 'data/hyps/obb/hyp.finetune_dota.yaml', help='hyperparameters path')
-    parser.add_argument('--epochs', type=int, default=10)
-    parser.add_argument('--batch-size', type=int, default=1, help='total batch size for all GPUs, -1 for autobatch')
+    parser.add_argument('--epochs', type=int, default=300)
+    parser.add_argument('--batch-size', type=int, default=8, help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=1024, help='train, val image size (pixels)')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
-    parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
+    parser.add_argument('--resume', nargs='?', const=True, default='runs/train/exp/weights/last.pt', help='resume most recent training')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
     parser.add_argument('--noval', action='store_true', help='only validate final epoch')
     parser.add_argument('--noautoanchor', action='store_true', help='disable autoanchor check')
@@ -462,12 +464,12 @@ def parse_opt(known=False):
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')
     parser.add_argument('--cache', type=str, nargs='?', const='ram', help='--cache images in "ram" (default) or "disk"')
     parser.add_argument('--image-weights', action='store_true', help='use weighted image selection for training')
-    parser.add_argument('--device', default='2,3', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--multi-scale', action='store_true', help='vary img-size +/- 50%%')
     parser.add_argument('--single-cls', action='store_true', help='train multi-class data as single-class')
     parser.add_argument('--adam', action='store_true', help='use torch.optim.Adam() optimizer')
     parser.add_argument('--sync-bn', action='store_true', help='use SyncBatchNorm, only available in DDP mode')
-    parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
+    parser.add_argument('--workers', type=int, default=0, help='max dataloader workers (per RANK in DDP mode)')
     parser.add_argument('--project', default=ROOT / 'runs/train', help='save to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')

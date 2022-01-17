@@ -35,6 +35,10 @@ from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
 from utils.rboxs_utils import poly2rbox, rbox2poly
 
+cls_names = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle',
+        'large-vehicle', 'ship', 'tennis-court', 'basketball-court', 'storage-tank',
+        'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool', 'helicopter',
+        'container-crane']
 
 @torch.no_grad()
 def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
@@ -157,10 +161,16 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 for *poly, conf, cls in reversed(det):
                     if save_txt:  # Write to file
                         # xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        poly = poly.tolist()
-                        line = (cls, *poly, conf) if save_conf else (cls, *poly)  # label format
-                        with open(txt_path + '.txt', 'a') as f:
-                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
+                        #poly = poly.tolist()
+                        cls_name = cls_names[int(cls.item())]
+                        poly_int = list(map(int, poly))
+                        poly_str = ' '.join(list(map(str, poly_int)))
+                        #line = (cls, *poly, conf) if save_conf else (cls, *poly)  # label format
+                        img_name = txt_path.split("/")[-1]
+                        ori_name = str(save_dir / 'labels' /img_name.split('_')[0])
+                        line = img_name + ' ' + str(round(conf.item(),5)) + ' ' + poly_str + ' ' + cls_name
+                        with open(ori_name + '.txt', 'a') as f:
+                            f.writelines(line + '\n')
 
                     if save_img or save_crop or view_img:  # Add poly to image
                         c = int(cls)  # integer class
@@ -212,14 +222,14 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'weights/yolov5_dotav15_obb.pt', help='model path(s)')
-    parser.add_argument('--source', type=str, default='dataset/dataset_demo/images/', help='file/dir/URL/glob, 0 for webcam')
+    parser.add_argument('--source', type=str, default='/home/yanggang/data/DOTA_SPLIT/test/images_200', help='file/dir/URL/glob, 0 for webcam')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[1024], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.01, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.1, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
     parser.add_argument('--device', default='1', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='show results')
-    parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
+    parser.add_argument('--save-txt', default=True, action='store_true', help='save results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--save-crop', action='store_true', help='save cropped prediction boxes')
     parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
