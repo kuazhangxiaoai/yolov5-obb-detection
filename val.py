@@ -122,7 +122,7 @@ def run(data,
     # Initialize/load model and set device
     training = model is not None
     if training:  # called by train.py
-        device, pt, jit, engine = next(model.parameters()).device, True, False, False  # get model device, PyTorch model
+        device, pt, jit, engine = next(model.parameters()).device, False, False, False  # get model device, PyTorch model
 
         half &= device.type != 'cpu'  # half precision only supported on CUDA
         model.half() if half else model.float()
@@ -181,9 +181,9 @@ def run(data,
         # targets (tensor): (n_gt_all_batch, [img_index clsid cx cy l s theta gaussian_θ_labels]) θ ∈ [-pi/2, pi/2)
         # shapes (tensor): (b, [(h_raw, w_raw), (hw_ratios, wh_paddings)])
         t1 = time_sync()
-        if pt or jit or engine:
-            im = im.to(device, non_blocking=True)
-            targets = targets.to(device)
+        #if pt or jit or engine:
+        im = im.to(device, non_blocking=True)
+        targets = targets.to(device)
         im = im.half() if half else im.float()  # uint8 to fp16/32
         im /= 255  # 0 - 255 to 0.0 - 1.0
         nb, _, height, width = im.shape  # batch size, channels, height, width
