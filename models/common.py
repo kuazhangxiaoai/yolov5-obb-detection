@@ -636,3 +636,111 @@ class Classify(nn.Module):
     def forward(self, x):
         z = torch.cat([self.aap(y) for y in (x if isinstance(x, list) else [x])], 1)  # cat if list
         return self.flat(self.conv(z))  # flatten to x(b,c2)
+
+class SpatialAttention(nn.Module):
+    def __init__(self, kernel_size=7):
+        super(SpatialAttention, self).__init__()
+        self.conv1 = nn.Conv2d(2, 1, kernel_size=kernel_size,
+                               padding=kernel_size//2, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avg_out = torch.mean(x, dim=1,keepdim=True)
+        max_out,_ = torch.max(x, dim=1,keepdim=True)
+        out = torch.cat([avg_out,max_out], dim=1)
+        out = self.conv1(out)
+        return self.sigmoid(out)
+
+class ChannelAttention(nn.Module):
+    def __init__(self, in_planes, ratio=16):
+        super(ChannelAttention, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Conv2d(in_planes,in_planes//ratio, 1,bias=False),
+            nn.ReLU(),
+            nn.Conv2d(in_planes//ratio, in_planes,1,bias=False)
+        )
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self,x):
+        avg_out = self.fc(self.avg_pool(x))
+        max_out = self.fc(self.max_pool(x))
+        out = avg_out + max_out
+        return self.sigmoid(out)
+
+class CBAM(nn.Module):
+    def __init__(self, in_planes):
+        super(CBAM, self).__init__()
+        self.sptial_attn = SpatialAttention()
+        self.channel_attn = ChannelAttention(in_planes=in_planes)
+
+    def forward(self, x):
+        x = self.channel_attn(x)*x
+        y = self.sptial_attn(x)*x
+        return y
+
+class SAM(nn.Module):
+    def __init__(self, in_channels, width, height):
+        super(SAM, self).__init__()
+        self.width  = width
+        self.height = height
+
+        self.wam = nn.Conv2d(width, in_channels,  1)
+        self.ham = nn.Conv2d(height, in_channels, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        xh = x.transpose(-2, -3)
+        xw = x.transpose(-1, -3)
+
+        yh = self.ham(xh)
+        yw = self.wam(xw)
+
+        y = yw @ yh
+        y = self.sigmoid(y)
+        return y
+
+class DAM(nn.Module):
+    def __init__(self, in_planes, width, height):
+        super(DAM, self).__init__()
+        self.width = width
+        self.height = height
+        self.cam = ChannelAttention(in_planes=in_planes)
+        self.sam = SAM(in_channels=in_planes, width=width, height=height)
+
+    def forward(self, x):
+        x = self.cam(x) * x
+        y = self.sam(x) * x
+        return y
+
+def window_partition(x, window_size):
+    x = x.permute(0, 2, 3, 1)
+    B,H,W,C = x.shape
+    x = x.view(B, H // window_size, window_size, W // window_size, window_size, C)
+    windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size, window_size, C)
+    windows = windows.permute(0, 3, 1, 2)
+    return windows
+
+def window_reverse(windows, window_size, H, W):
+    windows = windows.permute(0, 2, 3, 1)
+    B = int(windows.shape[0] / (H * W / window_size / window_size))
+    x = windows.view(B, H // window_size, W // window_size, window_size, window_size, -1)
+    x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, H, W, -1)
+    x = x.permute(0, 3, 1, 2)
+    return x
+
+
+class BDAM(nn.Module):
+    def __init__(self, in_planes, width, height):
+        super(BDAM, self).__init__()
+        self.width = width
+        self.height= height
+        self.window_size = min(self.width // 8, self.height //8)
+        self.dam = DAM(in_planes, self.window_size, self.window_size)
+
+    def forward(self, x):
+        x = window_partition(x, self.window_size)
+        x = self.dam(x)
+        y  = window_reverse(x,self.window_size, H=self.height, W=self.width)
+        return y
