@@ -47,20 +47,9 @@ I have used utility functions from other wonderful open-source projects. Espeici
 * [CAPTAIN-WHU/DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit)
 
 
-## More detailed explanation
-想要了解相关实现的细节和原理可以看我的知乎文章:   
-
-* [自己改建YOLOv5旋转目标的踩坑记录](https://www.zhihu.com/column/c_1358464959123390464).
-
-## 有问题反馈
-在使用中有任何问题，欢迎反馈给我，可以用以下联系方式跟我交流
-
-* 知乎（@[略略略](https://www.zhihu.com/people/lue-lue-lue-3-92-86)）
-* 代码问题提issues,其他问题请知乎上联系
-
 ## 关于作者
 
 ```javascript
-  Name  : "胡凯旋"
-  describe myself："咸鱼一枚"
+  Name  : "杨刚"
+  describe myself："菜鸟一枚"
 
