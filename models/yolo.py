@@ -120,7 +120,7 @@ class Model(nn.Module):
         if isinstance(m, Detect):
             s = 256  # 2x min stride
             m.inplace = self.inplace
-            m.stride = torch.Tensor([8, 16, 32], device='cpu')
+            m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])  # forward
             m.anchors /= m.stride.view(-1, 1, 1) # featuremap pixel
             check_anchor_order(m)
             self.stride = m.stride
@@ -297,12 +297,6 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                 n = 1
         elif m is nn.BatchNorm2d:
             args = [ch[f]]
-        elif m is CBAM:
-            c2 = c1 = ch[f]
-            args = [ch[f]]
-        elif (m is DAM) or (m is BDAM):
-            c2 = c1 = ch[f]
-            args = [c1, *args]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
         elif m is Detect:
