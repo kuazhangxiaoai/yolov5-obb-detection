@@ -21,7 +21,7 @@ from models.common import *
 from models.experimental import *
 from utils.autoanchor import check_anchor_order
 from utils.general import LOGGER, check_version, check_yaml, make_divisible, print_args
-from utils.plots import feature_visualization
+from utils.plots import feature_visualization, bdam_feature_visualization
 from utils.torch_utils import fuse_conv_and_bn, initialize_weights, model_info, scale_img, select_device, time_sync
 
 try:
@@ -59,6 +59,7 @@ class Detect(nn.Module):
                 x (list[P3_in,...]): torch.Size(b, c_i, h_i, w_i)
         """
         z = []  # inference output
+        obj_conf_heatmaps = []
         for i in range(self.nl):
             x[i] = self.m[i](x[i])  # conv
             bs, _, ny, nx = x[i].shape  # x[i](bs,self.no * self.na,20,20) to x[i](bs,self.na,20,20,self.no)
@@ -72,6 +73,10 @@ class Detect(nn.Module):
                 if self.inplace:
                     y[..., 0:2] = (y[..., 0:2] * 2 - 0.5 + self.grid[i]) * self.stride[i]  # xy
                     y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                    #visual obj confidence heatmap
+                    #obj_conf_heatmap = y[...,4].clone()
+                    #obj_conf_heatmap_np = obj_conf_heatmap.cpu().numpy()
+                    #obj_conf_heatmap_np = cv2.normalize(obj_conf_heatmap_np[0, ])
                 else:  # for YOLOv5 on AWS Inferentia https://github.com/ultralytics/yolov5/pull/2953
                     xy = (y[..., 0:2] * 2 - 0.5 + self.grid[i]) * self.stride[i]  # xy
                     wh = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
@@ -120,7 +125,7 @@ class Model(nn.Module):
         if isinstance(m, Detect):
             s = 256  # 2x min stride
             m.inplace = self.inplace
-            m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])  # forward
+            m.stride = torch.tensor([8, 16, 32])  # forward
             m.anchors /= m.stride.view(-1, 1, 1) # featuremap pixel
             check_anchor_order(m)
             self.stride = m.stride
@@ -176,8 +181,9 @@ class Model(nn.Module):
                 self._profile_one_layer(m, x, dt)
             x = m(x)  # run
             y.append(x if m.i in self.save else None)  # save output
-            if visualize:
-                feature_visualization(x, m.type, m.i, save_dir=visualize)
+        if visualize:
+            bdam_feature_visualization(x[1], save_dir=visualize)
+
         return x
 
     def _descale_pred(self, p, flips, scale, img_size):
@@ -307,6 +313,9 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
             c2 = ch[f] * args[0] ** 2
         elif m is Expand:
             c2 = ch[f] // args[0] ** 2
+        elif m is BDAM:
+            c1 = ch[f]
+            args = [c1, *args]
         else:
             c2 = ch[f]
 

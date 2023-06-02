@@ -183,6 +183,18 @@ def feature_visualization(x, module_type, stage, n=32, save_dir=Path('runs/detec
             plt.close()
             np.save(str(f.with_suffix('.npy')), x[0].cpu().numpy())  # npy save
 
+def bdam_feature_visualization(x, save_dir=Path('runs/detect/exp')):
+    for i, xi in enumerate(x):
+        batch, channels, height, width, _ = xi.shape  # batch, channels, height, width
+        obj_conf = xi[..., 4].sigmoid().clone().detach().cpu().numpy()
+        for j in range(channels):
+            f = save_dir / f'obj_conf_anchor_{i}_ch_{j}.png'
+            visual = None
+            im = obj_conf[0, j]
+            visual = cv2.normalize(im, visual, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+            visual = cv2.applyColorMap(visual, cv2.COLORMAP_JET)
+            visual = cv2.resize(visual, dsize=(1024, 1024), interpolation=cv2.INTER_LINEAR)
+            cv2.imwrite(str(f), visual)
 
 def hist2d(x, y, n=100):
     # 2d histogram used in labels.png and evolve.png

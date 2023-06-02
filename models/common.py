@@ -717,30 +717,30 @@ class DAM(nn.Module):
 def window_partition(x, window_size):
     x = x.permute(0, 2, 3, 1)
     B,H,W,C = x.shape
-    x = x.view(B, H // window_size, window_size, W // window_size, window_size, C)
+    x = x.view(B, H // window_size, window_size, W // window_size, window_size, C).contiguous()
     windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size, window_size, C)
-    windows = windows.permute(0, 3, 1, 2)
+    windows = windows.permute(0, 3, 1, 2).contiguous()
     return windows
 
 def window_reverse(windows, window_size, H, W):
     windows = windows.permute(0, 2, 3, 1)
     B = int(windows.shape[0] / (H * W / window_size / window_size))
-    x = windows.view(B, H // window_size, W // window_size, window_size, window_size, -1)
-    x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, H, W, -1)
-    x = x.permute(0, 3, 1, 2)
+    x = windows.view(B, H // window_size, W // window_size, window_size, window_size, -1).contiguous()
+    x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, H, W, -1).contiguous()
+    x = x.permute(0, 3, 1, 2).contiguous()
     return x
 
 
 class BDAM(nn.Module):
-    def __init__(self, in_planes, width, height):
+    def __init__(self, in_planes, width, height, N=8):
         super(BDAM, self).__init__()
         self.width = width
         self.height= height
-        self.window_size = min(self.width // 8, self.height //8)
+        self.window_size = min(self.width // N, self.height //N)
         self.dam = DAM(in_planes, self.window_size, self.window_size)
 
     def forward(self, x):
         x = window_partition(x, self.window_size)
         x = self.dam(x)
-        y  = window_reverse(x,self.window_size, H=self.height, W=self.width)
+        y = window_reverse(x,self.window_size, H=self.height, W=self.width)
         return y

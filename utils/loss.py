@@ -121,7 +121,7 @@ class ComputeLoss:
         for k in 'na', 'nc', 'nl', 'anchors':
             setattr(self, k, getattr(det, k))
 
-    def __call__(self, p, targets, paths):  # predictions, targets, model
+    def __call__(self, p, targets): #, paths):  # predictions, targets, model
         """
         Args:
             p (list[P3_out,...]): torch.Size(b, self.na, h_i, w_i, self.no), self.na means the number of anchors scales
@@ -159,7 +159,7 @@ class ComputeLoss:
                     sort_id = torch.argsort(score_iou)
                     b, a, gj, gi, score_iou = b[sort_id], a[sort_id], gj[sort_id], gi[sort_id], score_iou[sort_id]
                 tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * score_iou  # iou ratio
-                self.checkTargetsFeatureMap(tobj, paths, targets)
+                #self.checkTargetsFeatureMap(tobj, paths, targets)
 
                 # Classification
                 class_index = 5 + self.nc
@@ -318,9 +318,6 @@ class ComputeLoss:
             cls = cls_names[c]
             color = colors(c, True)
             annotator.poly_label(poly,cls, color=color)
-
-
-
 
         if not os.path.exists(os.path.join(expriments_root, 'stride_'+str(stride))):
             os.mkdir(os.path.join(expriments_root, 'stride_'+str(stride)))
