@@ -4,7 +4,7 @@
 ![train_batch0.jpg](./docs/train_batch6.jpg)
 ![results.png](./docs/results.png)
 
-The code for the implementation of “[Yolov5](https://github.com/ultralytics/yolov5) + [Circular Smooth Label](https://arxiv.org/abs/2003.05597v2)”. 
+The code for the implementation of “[Yolov5](https://github.com/ultralytics/yolov5) + [BDAM]+ [Circular Smooth Label](https://arxiv.org/abs/2003.05597v2)”. 
 
 # Results and Models
 The results on **DOTAv1.5_subsize1024_gap200_rate1.0** test-dev set are shown in the table below. (password:0620)
@@ -50,7 +50,7 @@ I have used utility functions from other wonderful open-source projects. Espeici
 * [Thinklab-SJTU/CSL_RetinaNet_Tensorflow](https://github.com/Thinklab-SJTU/CSL_RetinaNet_Tensorflow).
 * [jbwang1997/OBBDetection](https://github.com/jbwang1997/OBBDetection)
 * [CAPTAIN-WHU/DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit)
-
+* [hukaixuan19970627/yolov5_obb](https://github.com/hukaixuan19970627/yolov5_obb)
 
 ## 关于作者
 
